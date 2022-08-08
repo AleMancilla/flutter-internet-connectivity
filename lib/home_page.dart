@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_reachability/flutter_reachability.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -11,24 +14,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool ActiveConnection = false;
   String T = "";
-  // Future CheckUserConnection() async {
-  //   try {
-  //     final result = await InternetAddress.lookup('google.com');
-  //     print('====> $result');
-  //     if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-  //       setState(() {
-  //         ActiveConnection = true;
-  //         T = "Turn off the data and repress again";
-  //       });
-  //     }
-  //   } on SocketException catch (_) {
-  //     print('====> $_');
-  //     setState(() {
-  //       ActiveConnection = false;
-  //       T = "Turn On the data and repress again";
-  //     });
-  //   }
-  // }
+
+  String _networkStatus = 'Unknown';
+  late StreamSubscription<NetworkStatus> subscription;
 
   Future<bool> checkUserConnection() async {
     try {
@@ -47,7 +35,52 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     checkUserConnection();
+    _listenNetworkStatus();
     super.initState();
+  }
+
+  _listenNetworkStatus() async {
+    if (Platform.isAndroid) {
+      await Permission.phone.request();
+    }
+    subscription = FlutterReachbility().onNetworkStateChanged.listen((event) {
+      setState(() {
+        _networkStatus = "${event}";
+      });
+    });
+  }
+
+  // _currentNetworkStatus() async {
+  //   if (Platform.isAndroid) {
+  //     await Permission.phone.request();
+  //   }
+  //   NetworkStatus status = await FlutterReachbility().currentNetworkStatus();
+  //   switch (status) {
+  //     case NetworkStatus.unreachable:
+  //     //unreachable
+  //     case NetworkStatus.wifi:
+  //     //wifi
+  //     case NetworkStatus.mobile2G:
+  //     //2g
+  //     case NetworkStatus.moblie3G:
+  //     //3g
+  //     case NetworkStatus.moblie4G:
+  //     //4g
+  //     case NetworkStatus.moblie5G:
+  //     //5h
+  //     case NetworkStatus.otherMoblie:
+  //     //other
+  //   }
+  //   setState(() {
+  //     _networkStatus = status.toString();
+  //   });
+  // }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    subscription.cancel();
   }
 
   @override
@@ -66,7 +99,8 @@ class _HomePageState extends State<HomePage> {
                 bool status = await checkUserConnection();
                 print('==================>>>> $status');
               },
-              child: const Text("Check"))
+              child: const Text("Check")),
+          Text('Running on: $_networkStatus\n'),
         ],
       ),
     );
